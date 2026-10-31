@@ -40,10 +40,25 @@ decision changes or a dependency is added.
   (`home`); `home` is created by `seed_content`, which also removes Wagtail's
   default Welcome page. Only one `home` slug is allowed.
 - **D13 Editors group:** Code-managed in `cms/permissions.py` via a
-  `post_migrate` handler. Image permissions are looked up on the custom image
-  model's content type; the handler fails loudly if they are missing.
+  `post_migrate` handler. Wagtail's image policy checks the swapped image
+  model's `permission_policy.auth_model`, which is `wagtailimages.Image` (not
+  `cms.CustomImage`). Grant `add_image`, `change_image`, and `choose_image` on
+  that content type; the custom model only has
+  `add_customimage`/`change_customimage`/`delete_customimage`/
+  `view_customimage`, and there is no `choose_customimage`. The handler fails
+  loudly if a required row is missing.
 - **D14 Revalidation timing:** Webhooks are sent with `transaction.on_commit` so
   Next.js never refetches pre-commit data.
+- **D15 API v2 page fields:** Page list/detail responses put `slug`,
+  `seo_title`, `search_description`, `type`, `html_url`, and
+  `first_published_at` under `meta`; only `id`, `title`, `url_path`, custom
+  fields, and StreamField `body` are top-level. The frontend contract reads
+  `meta` and must not assume the flat shape shown in the README draft.
+- **D16 Draft Mode caching:** With Next 16.4.3 `cacheComponents: false`, a route
+  that calls `draftMode()` still builds as static. Public requests are served
+  from the static cache (`x-nextjs-cache: HIT`, `s-maxage`), while requests with
+  the `__prerender_bypass` cookie re-render the draft payload with
+  `Cache-Control: private, no-cache, no-store`.
 
 ## Environment and tooling
 
@@ -62,7 +77,9 @@ _None yet._
 
 ## Phase 0 verification results
 
-**Paused 2026-10-29 during the gate; Phase 1 not started.**
+**Completed 2026-10-30.** The gate ran against Django 5.2.18, Wagtail 7.4.4,
+and Next 16.4.3. Docker/PostgreSQL were unavailable, so backend probes used
+SQLite; re-run the backend suite against PostgreSQL in CI before release.
 
 Confirmed from installed 7.4.4 / Next 16.4.3:
 
@@ -73,14 +90,25 @@ Confirmed from installed 7.4.4 / Next 16.4.3:
 - Single/bulk URLs use `/admin/pages/<id>/delete/` and `/admin/bulk/<app>/<model>/<action>/`; `/admin/images/<id>/delete/`, `/admin/images/multiple/<id>/delete/`, and `/admin/bulk/cms/customimage/delete/`.
 - Hooks: `before_delete_page(request, page)`, `after_delete_page(request, page)`, `before_bulk_action(request, action_type, objects, action)`.
 - No `before_delete_image`/`before_delete_document` hooks; use `post_delete` signals or the middleware.
+- `AdminDeleteGuardMiddleware` prototype blocked editor GET and POST on single page/image/document delete and on bulk page/custom-image delete; an admin received 200 on the page delete confirmation.
 - Custom image permissions: `add_customimage`, `change_customimage`, `delete_customimage`, `view_customimage`; `GroupPagePermission` has `group`, `page`, `permission` FK.
+- The image policy's `auth_model` is `wagtailimages.Image`; granting only custom-image rows left add/change/choose false, while granting `add_image`/`change_image`/`choose_image` enabled add/change/choose and still denied delete (D13).
+- `ensure_editors_group` ran on a truly fresh SQLite database and normalized page permissions to `add_page`/`change_page`/`publish_page`, collection permissions to `add_image`/`change_image`/`choose_image`, and group permissions to `access_admin`.
+- An editor could list images, upload an image (302), edit it (200), and open the image chooser (200), but could not delete images through the admin.
 - Welcome is removed; `Site.hostname=localhost`, `port=80`; `?site=localhost` works and `hostname:port` is supported.
 - Bulk image upload without `alt` returns a follow-up edit form containing `alt`; no `ValueError`.
-- `PagePreview.created_at` is a `DateField`; the package calls `garbage_collect()` on preview (older than yesterday).
+- `PagePreview.created_at` is a `DateField`; the package calls `garbage_collect()` on preview (older than yesterday). A `TimestampSigner(salt="headlesspreview.token")` token round-tripped at runtime.
+- Old-path revalidation survives a slug change: the signal reported `old_path="/"` and `new_path="/renamed-home"` before the names changed to `/home/`/`/renamed-home/`.
+- Revision pruning prototype kept the live, latest, latest-50, and scheduled revisions and deleted older ones.
 - `RedirectsAPIViewSet` exposes `old_path` and `location`; auto-created redirects are on by default.
 - `publish_scheduled --dryrun` exits 0.
 - Native rich text API returns `linktype="page"`; implementation must use the README `SanitizedRichTextBlock.get_api_representation` (expand then `nh3`).
+- `/api/site/` (WIP branch) returned `header`, `footer`, and `theme`; logo renditions, nav URL `/`, footer copyright, and theme color were present.
+- ContentPage API v2 returns body items as `{type, value, id}`, expanded rich-text links, nested feature values, and `meta.slug`/`meta.seo_title`/`meta.search_description` (D15).
 - Next 16.4.3 `revalidateTag(tag, profile)` requires the second argument; `revalidatePath` is unchanged.
-- Next build marks a `draftMode()` route static with `cacheComponents: false`; the bypass-cookie runtime check is still pending.
+- A `draftMode()` route built as static with `cacheComponents: false`: public requests were `x-nextjs-cache: HIT` with `s-maxage=31536000`, while the bypass-cookie request rendered draft content with `private, no-cache, no-store` (D16).
+- The frontend Zod contract fixture at `src/lib/contracts/pages.json` parses the real `meta` envelope and all four block envelopes; Vitest, lint, typecheck, and build pass.
 
-Pending: preview redirect/token runtime; delete middleware prototype; `ensure_editors_group` fresh DB; old-path revalidation; revision pruning; `/api/site/`; ContentPage/Zod contract; final gate table and doc decisions.
+WIP restore notes: the parked `cms/permissions.py` references the nonexistent
+`choose_customimage` and the parked models have no migration. Fix both before
+continuing Phase 1.
