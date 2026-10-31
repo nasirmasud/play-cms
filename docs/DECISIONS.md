@@ -108,7 +108,3 @@ Confirmed from installed 7.4.4 / Next 16.4.3:
 - Next 16.4.3 `revalidateTag(tag, profile)` requires the second argument; `revalidatePath` is unchanged.
 - A `draftMode()` route built as static with `cacheComponents: false`: public requests were `x-nextjs-cache: HIT` with `s-maxage=31536000`, while the bypass-cookie request rendered draft content with `private, no-cache, no-store` (D16).
 - The frontend Zod contract fixture at `src/lib/contracts/pages.json` parses the real `meta` envelope and all four block envelopes; Vitest, lint, typecheck, and build pass.
-
-WIP restore notes: the parked `cms/permissions.py` references the nonexistent
-`choose_customimage` and the parked models have no migration. Fix both before
-continuing Phase 1.
