@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "total_count": 1
+  },
+  "items": [
+    {
+      "id": 4,
+      "meta": {
+        "slug": "about",
+        "seo_title": "About SEO",
+        "search_description": "About description",
+        "type": "cms.ContentPage",
+        "detail_url": "http://localhost:8000/api/v2/pages/4/",
+        "html_url": "http://localhost/about/",
+        "first_published_at": "2026-10-30T17:22:46.944516Z"
+      },
+      "title": "About",
+      "url_path": "/home/about/",
+      "body": [
+        {
+          "type": "text",
+          "value": {
+            "heading": "Hello",
+            "content": "<p>Read <a href=\"/\" rel=\"noopener noreferrer\">home</a>.</p>",
+            "align": "left",
+            "max_width": "md",
+            "spacing": "md"
+          },
+          "id": "140f0d10-e546-449e-b2b2-805ea9c8c937"
+        },
+        {
+          "type": "features",
+          "value": {
+            "heading": "Features",
+            "badge_text": "",
+            "items": [
+              {
+                "icon": "star",
+                "heading": "Fast",
+                "description": "Very fast"
+              }
+            ],
+            "columns": "3",
+            "background": "none",
+            "spacing": "md"
+          },
+          "id": "58cad48b-c2b0-4f7d-8792-71da17cf842f"
+        }
+      ],
+      "og_image": {
+        "id": 1,
+        "alt": "Hero alt",
+        "width": 16,
+        "height": 9,
+        "focal_point": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "renditions": {
+          "thumbnail": "http://localhost:8000/media/images/Hero.2e16d0ba.fill-160x160.png",
+          "card": "http://localhost:8000/media/images/Hero.2e16d0ba.fill-640x480.png",
+          "tablet": "http://localhost:8000/media/images/Hero.width-768.png",
+          "full": "http://localhost:8000/media/images/Hero.width-1600.png"
+        }
+      }
+    }
+  ]
+}
