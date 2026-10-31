@@ -17,11 +17,11 @@ SECRET_KEY = env("SECRET_KEY", default="")
 DEBUG = env.bool("DEBUG", default=False)
 
 INSTALLED_APPS = [
-    "cms",
     "home",
     "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
+    "wagtail.contrib.settings",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -32,9 +32,11 @@ INSTALLED_APPS = [
     "wagtail.admin",
     "wagtail.api.v2",
     "wagtail",
+    "wagtail_headless_preview",
     "modelcluster",
     "taggit",
     "django_filters",
+    "rest_framework",
     "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -42,6 +44,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Project app after Wagtail so its post_migrate hook sees their permissions.
+    "cms",
 ]
 
 MIDDLEWARE = [
@@ -54,6 +58,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    "cms.middleware.AdminDeleteGuardMiddleware",
 ]
 
 ROOT_URLCONF = "cms_project.urls"
@@ -138,7 +143,24 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 # Wagtail
 WAGTAIL_SITE_NAME = env("WAGTAIL_SITE_NAME", default="CMS")
 WAGTAILADMIN_BASE_URL = env("WAGTAILADMIN_BASE_URL", default="http://localhost:8000")
+WAGTAILAPI_BASE_URL = env("WAGTAILAPI_BASE_URL", default="http://localhost:8000")
 WAGTAILIMAGES_IMAGE_MODEL = "cms.CustomImage"
+WAGTAILIMAGES_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"]
+WAGTAILIMAGES_MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+SITE_HOSTNAME = env("SITE_HOSTNAME", default="localhost")
+SITE_PORT = env.int("SITE_PORT", default=80)
+WAGTAIL_HEADLESS_PREVIEW = {
+    "CLIENT_URLS": {"default": f"{FRONTEND_URL}/api/preview"},
+    "REDIRECT_ON_PREVIEW": True,
+    "ENFORCE_TRAILING_SLASH": False,
+}
+
+REVALIDATION_ENABLED = env.bool("REVALIDATION_ENABLED", default=False)
+REVALIDATION_URL = env("REVALIDATION_URL", default="")
+REVALIDATE_SECRET = env("REVALIDATE_SECRET", default="")
+REVISION_RETENTION = env.int("REVISION_RETENTION", default=50)
 
 WAGTAILSEARCH_BACKENDS = {
     "default": {
